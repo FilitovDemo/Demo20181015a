@@ -8,6 +8,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -24,18 +26,25 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private final String TAG = "TUTIM";
     private FusedLocationProviderClient mLPC;
     private LocationRequest mLReq;
-    private MapView mapView;
+    @BindView(R.id.mapView) MapView mapView;
     private GoogleMap gMap;
 
+    boolean isGPS_On = true;
+    @BindView(R.id.gpsswitch) ImageButton gpsSwitchButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
         mLPC = LocationServices.getFusedLocationProviderClient(this);
         mLReq = new LocationRequest();
@@ -43,9 +52,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mLReq.setFastestInterval(5000);
         mLReq.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        mapView = findViewById(R.id.mapView);
         mapView.onCreate( savedInstanceState );
         mapView.getMapAsync(this);
+    }
+
+
+    @OnClick(R.id.gpsswitch)
+    void onGPSSwitch(View v){
+        if( isGPS_On ){
+            isGPS_On = false;
+            gpsSwitchButton.setImageResource(R.drawable.location1);
+            stopLocation();
+        } else {
+            isGPS_On = true;
+            gpsSwitchButton.setImageResource(R.drawable.location2);
+            startLocation();
+        }
     }
 
 
@@ -88,7 +110,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        startLocation();
+        if(isGPS_On){
+            startLocation();
+        }
         mapView.onResume();
     }
 
@@ -96,7 +120,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onPause() {
         super.onPause();
-        stopLocation();
+        if(isGPS_On) {
+            stopLocation();
+        }
         mapView.onPause();
     }
 
