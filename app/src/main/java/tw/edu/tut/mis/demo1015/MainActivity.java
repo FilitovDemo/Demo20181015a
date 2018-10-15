@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @BindView(R.id.mapView) MapView mapView;
     private GoogleMap gMap;
 
-    boolean isGPS_On = true;
+    boolean isGPS_On;
     @BindView(R.id.gpsswitch) ImageButton gpsSwitchButton;
 
     @Override
@@ -54,8 +54,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mapView.onCreate( savedInstanceState );
         mapView.getMapAsync(this);
+
+        if( savedInstanceState!=null ){
+            isGPS_On = savedInstanceState.getBoolean("GPS_ON", true);
+        }else{ //沒有之前儲存的狀態時，直接給預設值就好了
+            isGPS_On = true;
+        }
+
+        if( isGPS_On ){
+            gpsSwitchButton.setImageResource(R.drawable.location2);
+        }else{
+            gpsSwitchButton.setImageResource(R.drawable.location1);
+        }
+
     }
 
+
+    //需要儲存狀態時
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean("GPS_ON", isGPS_On);
+        super.onSaveInstanceState(outState); //這行最後做!!
+    }
+
+    //需要取得狀態時
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        isGPS_On = savedInstanceState.getBoolean("GPS_ON", true);
+    }
 
     @OnClick(R.id.gpsswitch)
     void onGPSSwitch(View v){
@@ -109,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //
     @Override
     protected void onResume() {
+        Log.i(TAG, "GPS_ON: "+isGPS_On);
         super.onResume();
         if(isGPS_On){
             startLocation();
@@ -119,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //
     @Override
     protected void onPause() {
+        Log.i(TAG, "GPS_ON: "+isGPS_On);
         super.onPause();
         if(isGPS_On) {
             stopLocation();
