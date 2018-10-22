@@ -1,0 +1,15 @@
+{
+  "name": "demo_backend",
+  "version": "0.0.1",
+  "description": "demo web service backend for gps location share",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "filitov@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4"
+  }
+}

@@ -3,6 +3,7 @@ package tw.edu.tut.mis.demo1015;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -36,10 +37,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private FusedLocationProviderClient mLPC;
     private LocationRequest mLReq;
     @BindView(R.id.mapView) MapView mapView;
-    private GoogleMap gMap;
+    private GoogleMap gMap = null;
 
     boolean isGPS_On;
     @BindView(R.id.gpsswitch) ImageButton gpsSwitchButton;
+
+    double mLat=23.037851, mLon=120.239122; //目前所在的經緯度
+
+    Handler timerHandler = new Handler();  //操作計時器的把柄
 
     String mUserID;
     //先產生一個暫時性的key
@@ -131,11 +136,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (locs.size()>0) {
                     Location loc = locs.get( locs.size()-1 );
                     Log.i(TAG, "Locatoin callback: "+ loc.toString() );
-//                    loc.getLatitude()
-//                    loc.getLongitude()
-                    LatLng pos = new LatLng( loc.getLatitude(), loc.getLongitude() );
-                    gMap.moveCamera(CameraUpdateFactory.newLatLng(pos));
-                    gMap.addMarker(new MarkerOptions().position(pos).title("我在這兒"));
+                    mLat = loc.getLatitude();
+                    mLon = loc.getLongitude();
+                    //搬到定時處理那邊...
+//                    LatLng pos = new LatLng( mLat, mLon );
+//                    gMap.moveCamera(CameraUpdateFactory.newLatLng(pos));
+//                    gMap.addMarker(new MarkerOptions().position(pos).title("我在這兒"));
                 }
 
             }
@@ -152,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             startLocation();
         }
         mapView.onResume();
+        timerHandler.postDelayed( timerTask, 0 );  //啟動計時器task
     }
 
     //
@@ -163,6 +170,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             stopLocation();
         }
         mapView.onPause();
+        timerHandler.removeCallbacks( timerTask );  //停止計時器task
     }
 
     //
@@ -201,4 +209,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         gMap = googleMap;
         gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(23.037851,120.239122),16));
     }
+
+
+    Runnable timerTask = new Runnable() {
+        @Override
+        public void run() {
+            Log.i("myTimer", "啟動:"+mLat+","+mLon);
+            if( isGPS_On ) { //只有在GPS開啟時才做地圖的定位
+                LatLng pos = new LatLng(mLat, mLon);
+                if( gMap!=null ) { //等待地圖載入完成有gMap物件時才處理
+                    gMap.moveCamera(CameraUpdateFactory.newLatLng(pos));
+                    gMap.clear();
+                    gMap.addMarker(new MarkerOptions().position(pos).title("我在這兒"));
+                }
+
+                //嘗試發送座標給server
+                //取回其他人的座標
+
+            }
+            timerHandler.postDelayed(this, 5000);  //5s後啟動計時器task
+        }
+    };
+
 }
