@@ -16,7 +16,6 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -25,6 +24,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
+import java.util.UUID;
+
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -39,6 +40,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     boolean isGPS_On;
     @BindView(R.id.gpsswitch) ImageButton gpsSwitchButton;
+
+    String mUserID;
+    //先產生一個暫時性的key
+    String mTempUserID = UUID.randomUUID().toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,10 +60,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapView.onCreate( savedInstanceState );
         mapView.getMapAsync(this);
 
+
         if( savedInstanceState!=null ){
             isGPS_On = savedInstanceState.getBoolean("GPS_ON", true);
+            mUserID = savedInstanceState.getString("USER_ID", mTempUserID);
         }else{ //沒有之前儲存的狀態時，直接給預設值就好了
             isGPS_On = true;
+            mUserID = mTempUserID;
         }
 
         if( isGPS_On ){
@@ -74,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putBoolean("GPS_ON", isGPS_On);
+        outState.putString("USER_ID", mUserID);
         super.onSaveInstanceState(outState); //這行最後做!!
     }
 
@@ -82,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         isGPS_On = savedInstanceState.getBoolean("GPS_ON", true);
+        mUserID = savedInstanceState.getString("USER_ID", mTempUserID); //TODO: 以後試著改好一點
     }
 
     @OnClick(R.id.gpsswitch)
