@@ -11,3 +11,4 @@
 .externalNativeBuild
 node_modules
 package-lock.jsons
+backend/package-lock.json
