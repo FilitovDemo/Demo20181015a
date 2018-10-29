@@ -23,7 +23,11 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.squareup.moshi.JsonAdapter;
+import com.squareup.moshi.Moshi;
+import com.squareup.moshi.Types;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +35,13 @@ import java.util.UUID;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private final String TAG = "TUTIM";
@@ -211,6 +222,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
+    private final OkHttpClient mHTTP = new OkHttpClient();
+    private final Moshi mMoshi = new Moshi.Builder().build();
+    private final JsonAdapter<GPSData> mJSONSend = mMoshi.adapter(GPSData.class);
+    private final JsonAdapter< List<GPSData> > mJSONRecv
+        = mMoshi.adapter(Types.newParameterizedType(List.class, GPSData.class));
+
     Runnable timerTask = new Runnable() {
         @Override
         public void run() {
@@ -224,11 +241,77 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 
                 //嘗試發送座標給server
-                //取回其他人的座標
+                //準備要發送的資料
+                GPSData data = new GPSData();
+                data.user = "暱稱自己取";
+                data.lat = mLat;
+                data.lon = mLon;
+                data.uuid = mUserID;
 
+                //準備一個HTTP的請求
+                //連線到 fili.tw 埠號 18888
+                //POST /update
+                //Content-Type: application/json; charset=utf-8
+                //
+                //JSON格式的字串
+                MediaType mime = MediaType.parse("application/json; charset=utf-8");
+                RequestBody body = RequestBody.create(mime, mJSONSend.toJson(data));
+                Request req = new Request.Builder()
+                                    .url("http://fili.tw:18888/update")
+                                    .post(body)
+                                    .build();
+                //例如 抓 http://www.tut.edu.tw
+                //Request req = new Request.Builder()
+                //        .url("http://www.tut.edu.tw")
+                //        .get()
+                //        .build();
+
+
+                //發出請求
+                mHTTP.newCall(req).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        //取回其他人的座標
+                        //資料 response.body().source()
+                        final List<GPSData> datas = mJSONRecv.fromJson( response.body().source() );
+                        if( datas.size()>0 && isGPS_On ){
+                            //因為畫面更新在MainActivity的執行緒中，所以更新畫面要用 run on UI thread
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    //實際更新畫面的動作
+                                    for(int i=0; i<datas.size(); i=i+1){
+                                        GPSData data = datas.get(i);
+                                        LatLng pos = new LatLng(data.lat, data.lon);
+                                        gMap.addMarker(new MarkerOptions().position(pos).title(data.user));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
             }
             timerHandler.postDelayed(this, 5000);  //5s後啟動計時器task
         }
     };
+}  //END MainActivity
 
+//留意...可以另外建立一個 Data.java 的類別檔
+//預計要存
+//{
+//    uuid: "fasdfsafasd",
+//    lat: 23.1,
+//    lon: 129.2,
+//    user: "暱稱"
+//}
+class GPSData{
+    String uuid;
+    double lat;
+    double lon;
+    String user;
 }
